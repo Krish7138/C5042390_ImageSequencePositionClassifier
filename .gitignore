@@ -45,8 +45,6 @@ models/
 .DS_Store
 
 # Project specific
-Results/*.png
-Results/*.csv
 *.log
 
 # Data (if you download it locally)
