@@ -1,0 +1,197 @@
+===============================================================================
+DNN REASSESSMENT - ANALYSIS QUESTIONS
+Image Sequence Position Classification Project
+===============================================================================
+
+QUESTION 1: Which modification improved performance most?
+-------------------------------------------------------------------------------
+
+The "No Dropout" experiment gave the best results with 22% validation accuracy. 
+This was surprising because usually dropout helps, but in my case it actually 
+hurt performance slightly. I think this happened because my dataset is quite 
+small - only 300 stories with 1,500 images total. When you have limited data, 
+dropout can sometimes remove too much information during training.
+
+The BatchNorm experiment also reached 22% validation accuracy, which tied for 
+best performance. However, BatchNorm showed signs of memorizing the training 
+data too much (24.5% training accuracy vs 22% validation), so I would say 
+"No Dropout" is the actual winner since it generalizes better.
+
+Honestly though, the differences between all experiments are really small - 
+everyone is hovering around 18-22%, which is barely better than random guessing 
+at 20%. This tells me the task itself is extremely difficult, and no single 
+architectural change made a huge difference.
+
+
+QUESTION 2: Which caused overfitting?
+-------------------------------------------------------------------------------
+
+The BatchNorm experiment clearly showed overfitting. You can see this in the 
+final numbers - the training accuracy reached 24.5% but validation accuracy 
+only got to 22%. That's a gap of 2.5%, which is significant given how small 
+the overall accuracies are.
+
+What's interesting is that the training loss for BatchNorm went down to 1.59 
+while the validation loss stayed around 1.61. This gap between training and 
+validation metrics is the classic sign that the model is learning patterns 
+specific to the training data but not generalizing well to new examples.
+
+I think BatchNorm caused overfitting because it helped the model learn the 
+training examples too well. Batch normalization makes the gradients more stable, 
+which usually helps, but with such a small dataset it allowed the network to 
+basically memorize specific training images rather than learning general 
+features that work on any image from the sequence.
+
+None of the other experiments showed this problem - their training and validation 
+accuracies stayed very close together.
+
+
+QUESTION 3: How do you detect overfitting from the curves?
+-------------------------------------------------------------------------------
+
+Looking at the loss curves is the easiest way to spot overfitting. In a healthy 
+model, both training loss and validation loss should decrease together and stay 
+close to each other. When overfitting happens, you see the training loss keep 
+going down but the validation loss either stays flat or starts going back up.
+
+In my BatchNorm experiment, the training loss dropped from 1.68 to 1.59 across 
+5 epochs, but the validation loss actually went up slightly from 1.609 to 1.615. 
+That divergence is the red flag.
+
+For the accuracy curves, overfitting shows up when training accuracy keeps 
+climbing but validation accuracy doesn't improve or even gets worse. BatchNorm 
+showed this - training accuracy climbed from 21.75% to 24.5%, but validation 
+accuracy fluctuated between 18% and 22% without a clear upward trend.
+
+The other experiments didn't show this pattern. Their training and validation 
+curves moved together, staying within a small range. This actually indicates 
+underfitting more than anything - the models aren't powerful enough to learn 
+the task well, but at least they're not memorizing.
+
+
+QUESTION 4: Did increasing model size always help?
+-------------------------------------------------------------------------------
+
+No, it definitely didn't help in my case. The "Filters=64" experiment doubled 
+the number of filters from 32 to 64, which means way more parameters - the 
+model had around 2.4 million parameters instead of 618 thousand. But this 
+bigger model only achieved 19% validation accuracy, which is actually worse 
+than the baseline.
+
+I believe this happened because bigger models need more training data to learn 
+properly. With only 1,500 images, the larger network had too many parameters 
+and not enough examples to learn from. It's like trying to learn a language 
+from just a few sentences - if your brain is too big and complex, you might 
+just memorize those specific sentences without understanding the actual language.
+
+The Kernel=5 experiment was also meant to increase model capacity by using 
+larger filters, and it performed even worse at 18% validation accuracy. This 
+confirms that simply making the model bigger doesn't automatically improve 
+results.
+
+In deep learning, there's a balance - you need the model to be complex enough 
+to learn patterns, but not so complex that it needs massive amounts of data.
+
+
+QUESTION 5: Why is predicting sequence position difficult?
+-------------------------------------------------------------------------------
+
+This task turned out to be incredibly hard because I'm asking the model to 
+figure out where an image belongs in a story just by looking at that single 
+image, without seeing the other frames. That's really tough.
+
+Think about it - if I show you one random photo from a 5-photo story, can you 
+tell if it's the beginning, middle, or end? Usually not, unless there are very 
+obvious clues like "a person opening a door" (probably first) or "walking away" 
+(probably last). But most photos are ambiguous.
+
+My results prove this is hard - all five experiments performed around 20%, 
+which is basically random guessing for a 5-class problem. The model couldn't 
+learn meaningful patterns because static images don't have clear markers for 
+their position in a sequence.
+
+If I used text instead of images, it would be much easier. Text has temporal 
+words like "first," "then," "finally," "meanwhile" that directly indicate 
+position. Images don't have this. A photo of someone eating could be from any 
+point in the story.
+
+To actually solve this task well, I would need to show the model multiple 
+images from the same story so it could understand the full context and 
+relationships between frames.
+
+
+===============================================================================
+VIVA PREPARATION NOTES
+===============================================================================
+
+WHY I CHOSE IMAGES:
+I wanted to explore whether visual features alone could tell you about 
+temporal sequence without any text. It's a challenging research question - can 
+a CNN learn to recognize "first-ness" or "last-ness" just from pixels? Turns 
+out it's really difficult, but that's what made it interesting to study.
+
+CNNs are great at understanding what's in an image (objects, scenes, actions), 
+but understanding when something happens is much harder. I wanted to test the 
+limits of what visual-only models can do.
+
+
+WHY NO DROPOUT IMPROVED PERFORMANCE:
+I think No Dropout worked best because my dataset is small. Dropout randomly 
+turns off neurons during training, which helps with big datasets but can throw 
+away important information when data is limited. With only 1,500 images, every 
+bit of learning matters.
+
+
+WHY KERNEL=5 REDUCED PERFORMANCE:
+Larger kernels (5x5 instead of 3x3) look at bigger areas of the image at once. 
+But for this task, I don't think seeing larger regions helps. The important 
+features for sequence position are probably small details, not large-scale 
+patterns. Plus, bigger kernels have more parameters to learn, which again 
+becomes a problem with limited data.
+
+
+WHAT MY LOSS CURVES SHOW:
+My loss curves show that all models quickly reached their learning limit. By 
+epoch 2 or 3, the losses plateaued around 1.60-1.61, which is close to the 
+loss you'd get from random guessing (log(5) ≈ 1.609). This means the models 
+learned some basic patterns but couldn't find strong signals to distinguish 
+between positions.
+
+The curves staying flat also means no overfitting for most experiments - 
+training and validation moved together. Only BatchNorm showed divergence.
+
+
+WHAT MY MODEL IS LEARNING:
+Looking at the results, I think the model is learning very basic visual features 
+like colors, textures, and simple objects, but it's not learning meaningful 
+temporal patterns. The near-random accuracy suggests it might be picking up on 
+small statistical biases in the dataset rather than real sequence understanding.
+
+For example, maybe the first images tend to be slightly brighter, or the last 
+images have more of certain colors. The model might learn these weak correlations 
+without actually understanding narrative progression.
+
+To truly learn sequence position, the model would need to recognize things like 
+"setup actions" (opening a box, entering a room) vs "conclusion actions" 
+(closing things, leaving), which requires much higher-level understanding than 
+current CNNs can achieve from single images.
+
+
+===============================================================================
+KEY TAKEAWAYS FOR VIVA
+===============================================================================
+
+1. Task is fundamentally difficult - static images lack temporal markers
+2. All models performed near random baseline (~20%)
+3. Small dataset (1,500 images) limited what models could learn
+4. Increasing model size hurt performance due to data limitations
+5. BatchNorm showed overfitting (train 24.5%, val 22%)
+6. No Dropout achieved best results by not discarding limited information
+7. Loss curves plateaued early, indicating quick learning saturation
+8. Models likely learning weak correlations, not true sequence understanding
+
+This project demonstrates that predicting temporal position from visual content 
+alone is an open research problem requiring either multi-frame context or 
+significantly more training data with pre-trained features.
+
+===============================================================================
